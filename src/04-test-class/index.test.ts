@@ -1,44 +1,89 @@
-// Uncomment the code below and write your tests
-// import { getBankAccount } from '.';
+import {
+  getBankAccount,
+  TransferFailedError,
+  InsufficientFundsError,
+  SynchronizationFailedError,
+} from './index';
+import { random } from 'lodash';
+
+jest.mock('lodash', () => ({
+  random: jest.fn(),
+}));
 
 describe('BankAccount', () => {
   test('should create account with initial balance', () => {
-    // Write your test here
+    const bankAccount = getBankAccount(20);
+    expect(bankAccount.getBalance()).toBe(20);
   });
 
   test('should throw InsufficientFundsError error when withdrawing more than balance', () => {
-    // Write your test here
+    const bankAccount = getBankAccount(20);
+    expect(() => bankAccount.withdraw(40)).toThrow(InsufficientFundsError);
+    expect(() => bankAccount.withdraw(40)).toThrow(
+      'Insufficient funds: cannot withdraw more than 20',
+    );
   });
 
   test('should throw error when transferring more than balance', () => {
-    // Write your test here
+    const bankAccount1 = getBankAccount(40);
+    const bankAccount2 = getBankAccount(20);
+
+    expect(() => bankAccount1.transfer(60, bankAccount2)).toThrow(
+      InsufficientFundsError,
+    );
+    expect(() => bankAccount1.transfer(60, bankAccount2)).toThrow(
+      'Insufficient funds: cannot withdraw more than 40',
+    );
   });
 
   test('should throw error when transferring to the same account', () => {
-    // Write your test here
+    const bankAccount = getBankAccount(40);
+    expect(() => bankAccount.transfer(20, bankAccount)).toThrow(
+      TransferFailedError,
+    );
   });
 
   test('should deposit money', () => {
-    // Write your test here
+    const bankAccount = getBankAccount(40);
+    bankAccount.deposit(20);
+    expect(bankAccount.getBalance()).toBe(60);
   });
 
   test('should withdraw money', () => {
-    // Write your test here
+    const bankAccount = getBankAccount(40);
+    bankAccount.withdraw(20);
+    expect(bankAccount.getBalance()).toBe(20);
   });
 
   test('should transfer money', () => {
-    // Write your test here
+    const bankAccount1 = getBankAccount(40);
+    const bankAccount2 = getBankAccount(20);
+    bankAccount1.transfer(20, bankAccount2);
+    expect(bankAccount1.getBalance()).toBe(20);
+    expect(bankAccount2.getBalance()).toBe(40);
   });
 
   test('fetchBalance should return number in case if request did not failed', async () => {
-    // Write your tests here
+    const bankAccount = getBankAccount(40);
+    (random as jest.Mock).mockReturnValueOnce(1);
+
+    const balance = await bankAccount.fetchBalance();
+    expect(balance).not.toBeNull();
+    expect(typeof balance).toBe('number');
   });
 
   test('should set new balance if fetchBalance returned number', async () => {
-    // Write your tests here
+    const bankAccount = getBankAccount(40);
+    jest.spyOn(bankAccount, 'fetchBalance').mockResolvedValue(30);
+    await bankAccount.synchronizeBalance();
+    expect(bankAccount.getBalance()).toBe(30);
   });
 
   test('should throw SynchronizationFailedError if fetchBalance returned null', async () => {
-    // Write your tests here
+    const bankAccount = getBankAccount(40);
+    jest.spyOn(bankAccount, 'fetchBalance').mockResolvedValue(null);
+    await expect(bankAccount.synchronizeBalance()).rejects.toThrow(
+      SynchronizationFailedError,
+    );
   });
 });
